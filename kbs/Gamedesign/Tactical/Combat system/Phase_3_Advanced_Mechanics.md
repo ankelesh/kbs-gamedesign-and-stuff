@@ -1,5 +1,5 @@
 # TACTICAL COMBAT SYSTEM - PHASE 3: ADVANCED MECHANICS
-*Project KBS - Professional Game Design Documentation*
+*Project KBS - Game Design Documentation*
 
 ---
 
@@ -71,7 +71,7 @@ No Value Reroll:
 
 #### **Mid-Turn Modifications**
 ```
-Birdfolk Chain Example: Defend grants +20 Initiative
+Quemin Chain Example: Defend grants +20 Initiative
 ├─ Effect applies AFTER Defend action resolves
 ├─ Does NOT reshuffle current turn queue
 └─ Takes effect on NEXT turn's queue generation
@@ -84,14 +84,12 @@ Turn N+1: New queue generated → Unit sorted with modified initiative
 #### **Initiative Gain Triggers Queue Resort**
 ```
 Trigger Conditions:
-├─ Unit gains permanent initiative increase (level-up)
-├─ Long-duration buff applied mid-battle
-└─ Global initiative modification (terrain change)
+├─ Long-duration buff applied mid-battle on unit who still can act
 
 Behavior:
 ├─ Queue immediately resorts with new values
 ├─ Already-acted units remain marked as acted
-└─ Remaining queue reorders based on new initiatives
+└─ Current unit will still end it's turn normally (resorted queue will be popped normally)
 ```
 
 ---
@@ -100,16 +98,16 @@ Behavior:
 
 ### **Target Reach Types - Complete Specification**
 
-| Reach Type | # Targets | Selection Rule | Notes |
-|------------|-----------|----------------|-------|
-| **AnyEnemy** | 1 | Player selects | Standard single-target |
-| **ClosestEnemies** | 1 | Automatic (adjacent only) | Fails if no adjacent enemy |
-| **AllEnemies** | All living enemies | Automatic | Implementation order from team container |
-| **Area** | Varies | Based on area shape + anchor point | DataAsset defines shape |
-| **AnyFriendly** | 1 | Player selects | Support abilities |
-| **AllFriendlies** | All living allies | Automatic | Buff/heal abilities |
-| **EmptyCell** | 0 (position) | Player selects | Summon/movement abilities |
-| **EmptyCellOrFriendly** | 0 or 1 | Player selects | Swap/teleport abilities |
+| Reach Type               | # Targets             | Selection Rule        | Notes                                        |
+|--------------------------|-----------------------|-----------------------|----------------------------------------------|
+| **AnyEnemy**             | 1                     | Manual                | Standard single-target                       |
+| **ClosestEnemies**       | 1                     | Manual (adjacent only)| Standard close-combat                        |
+| **AllEnemies**           | All living enemies    | Automatic.            | Implementation order from team container     |
+| **Area**                 | Shape                 | Manual (anchor point) | DataAsset defines shape                      |
+| **AnyFriendly**          | 1                     | Manual                | Support abilities                            |
+| **AllFriendlies**        | All living allies     | Automatic             | Buff/heal abilities                          |
+| **EmptyCell**            | 0 (position)          | Manual                |  Summon/movement abilities                   |
+| **EmptyCellOrFriendly**  | 0 or 1                | Manual                | Swap/teleport abilities                      |
 
 ### **Area Shape System**
 

@@ -1,5 +1,5 @@
 # TACTICAL COMBAT SYSTEM - PHASE 2: COMBAT CALCULATIONS
-*Project KBS - Professional Game Design Documentation*
+*Project KBS - Game Design Documentation*
 
 ---
 
@@ -9,14 +9,14 @@
 
 ```
 PHASE 1: Accuracy Check
-├─ HitChance = UnitAccuracy × WeaponAccuracyMultiplier × 100
+├─ HitChance = UnitAccuracy × WeaponAccuracyMultiplier × 100 (clamp 0-100)
 ├─ Roll d100
 └─ If Roll > HitChance → MISS (exit)
 
 PHASE 2: Damage Source Selection
-├─ Weapon has multiple damage sources (Physical, Fire, Earth, etc.)
-├─ Check target's armor for each source
-└─ SELECT: Source with LOWEST target armor
+├─ Weapon has multiple damage sources (Physical, Fire, Earth, Air, Water, Mind, Death, Life)
+├─ Check target's armor for each source 
+└─ SELECT: Source with LOWEST target armor and no immunity/ward, if no such, pick first
 
 PHASE 3: Defense Layer Processing
 ├─ Layer 1: IMMUNITY CHECK
@@ -24,31 +24,34 @@ PHASE 3: Defense Layer Processing
 │
 ├─ Layer 2: WARD CHECK
 │  ├─ If target has ward for selected source → 0 damage
-│  └─ Consume ward (one-time use)
+│  └─ Consume ward (mark as consumed in result object)
 │
 ├─ Layer 3: PERCENTAGE ARMOR
 │  ├─ DamageAfterArmor = BaseDamage × (1 - ArmorValue)
-│  └─ ArmorValue capped at 0.9 (max 90% reduction)
+│  └─ ArmorValue clamp (0-90%)
+│
+├─ Layer 4: DEFENCE STANCE
+│  ├─ if is on: DamageAfterArmor * 0.5
 │
 └─ Layer 4: FLAT REDUCTION
    ├─ FinalDamage = DamageAfterArmor - FlatReduction
-   └─ FinalDamage = Max(0, FinalDamage)
+   └─ FinalDamage = clamped (0) if source is not Life
 
 RESULT: FinalDamage applied to target HP
 ```
 
 ### **Damage Types (8 Sources)**
 
-| Damage Source | Common Users | Notes |
-|---------------|--------------|-------|
-| **Physical** | Melee/ranged weapons | Most common, countered by physical armor |
-| **Fire** | Demons, Gnome flamers | Demons resistant/immune to fire |
-| **Earth** | - | - |
-| **Air** | - | - |
-| **Water** | - | - |
-| **Life** | - | Typically healing, not damage |
-| **Death** | Resistance necromancers | Resistance faction specialty |
-| **Mind** | Demons (Seduction) | Bypasses physical defenses |
+| Damage Source | Common Users                 | Notes                                                  |
+|---------------|------------------------------|--------------------------------------------------------|
+| **Physical**  | Melee/ranged weapons         | Most common, armour usually hard to stack.             |
+| **Fire**      | Demons, Dwarf demon-tech     | Demons resistant/immune to fire                        |
+| **Earth**     | Dwarf mages                  | Often has stun/ini reduction and locked to ground layer|
+| **Air**       | Empire, quemin mages         | Often single-target high-damage spells                 |
+| **Water**     | Dragons                      | Rare source, often is all-units aoe with debuffs.      |
+| **Life**      | Any healers                  | Typically healing and buffs, not damage                |
+| **Death**     | League mages, poison, debuffs| Most League units are immune to death                  |
+| **Mind**      | Demons, Ghosts, spells       | Rarely deals damage, often stuns or debuffs            |
 
 ---
 
@@ -56,7 +59,7 @@ RESULT: FinalDamage applied to target HP
 
 ### **Layer 1: Immunities**
 - **Effect**: 100% damage block, permanent
-- **Behavior**: Completely negates damage from source
+- **Behavior**: Completely negates damage from source, blocks effect application
 - **Examples**: 
   - Demons immune to Fire
   - Ghosts immune to Physical
@@ -64,11 +67,11 @@ RESULT: FinalDamage applied to target HP
 
 ### **Layer 2: Wards (One-Time Blocks)**
 - **Effect**: 100% damage block, consumed on use
-- **Behavior**: Blocks first instance of damage from each source
-- **Consumption**: Ward removed after blocking attack
-- **Special**: Demon "All-Consuming Flame" bypasses ward consumption
-  - Ward blocks damage but leaves DoT (25% of attack, 2 turns)
-  - 10% damage penetrates fire immunity
+- **Behavior**: Blocks first instance of damage from particular source (or effect from same source)
+- **Consumption**: Ward removed after blocking attack or effect
+- **Special**: Demon "All-Consuming Flame" bypasses ward consumption (check if ward was spent)
+  - If ward spent = apply DoT with 25% of damage (2 turns)
+  - If immunity: 10% damage penetrates fire immunity as Life damage (ability level check)
 - **Code**: Checked second, consumes ward on block
 
 ### **Layer 3: Percentage Armor**
@@ -78,20 +81,20 @@ RESULT: FinalDamage applied to target HP
 - **Per-Source**: Each damage type has separate armor value
 - **Examples**:
   - 50% Fire armor + 20% Physical armor (independent)
-  - Petrification sets ALL armors to 30%
 
 ### **Layer 4: Flat Reduction**
 - **Effect**: Fixed damage subtraction after percentage armor
-- **Timing**: Applied AFTER percentage reduction
+- **Timing**: Applied AFTER percentage reduction and defensive stance, so is extremely powerfull when stacked
 - **Formula**: `Max(0, DamageAfterArmor - FlatReduction)`
 - **Universal**: Applies to all damage sources equally
+- **Special**: Is designed to add armoured "in lore" units extra durability vs. weak attacks
 
 ### **Defense Calculation Example**
 
 ```
 Scenario: Demon attacks with Fire weapon
 ├─ Base Damage: 100 Fire
-├─ Target: Has 50% Fire Armor, 10 Flat Reduction
+├─ Target: Has 50% Fire Armor, 10 Flat Reduction, Fire ward
 │
 ├─ Immunity Check: No fire immunity → Continue
 ├─ Ward Check: Has Fire ward → 0 damage, consume ward
@@ -118,10 +121,10 @@ HitChance = UnitAccuracy × WeaponAccuracyMultiplier × 100
 ├─ WeaponAccuracyMultiplier: Usually 1.0, modified by weapon type
 └─ Result: 0-100% (clamped)
 
-Modifiers:
-├─ Shadow Veil (Resistance): Subtracts flat value AFTER calculation
-│  └─ Applied after clamping to 100%, min 10% final hit chance
-├─ Mummy Debuff: -10 accuracy (applied to base accuracy)
+Common modifiers:
+├─ Shadow Veil (Resistance): Subtracts flat value AFTER calculation (ability-level of calc)
+│  └─ clamped (0)
+├─ Debuffs: -10 accuracy (applied to modified stats)
 └─ Level-Up: +1% accuracy per level (capped at 100%)
 ```
 
@@ -147,61 +150,58 @@ ELSE → MISS
 ### **Effect Categories**
 
 #### **A. Damage Over Time (DoT)**
+- Examples, spreadsheet ()
 
-| Effect | Source | Damage | Duration | Notes |
-|--------|--------|--------|----------|-------|
-| **All-Consuming Flame** | Demons | 25% of blocked attack | 2 turns | Penetrates wards, 10% through fire immunity |
-| **Poison** | Multiple factions | Varies by ability | Varies | Standard DoT |
+| Effect                  | Source | Damage             | Duration | Notes                          |
+|-------------------------|--------|--------------------|----------|--------------------------------|
+| **All-Consuming Flame** | Life   | dynamic calc (25%) | 2 turns  | Applied by demon's fire attacks|
+| **Poison**              | Death  | static calc (value)| Varies   | Standard DoT example           |
+
 
 **Mechanics:**
 - Processed on `OnTurnStart()` (beginning of affected unit's turn)
-- Multiple DoTs from DIFFERENT DataAssets stack
-- Same DataAsset = no stack (replaces/refreshes)
+- Each effect has effect_stack_id (baked in DataAsset). If not unique on unit (by stack id) - override duration, not apply
 
 #### **B. Stat Modifications**
+- Two types: additive and override
+- Additive calculate and apply themselves
+- Override during calculation seeks for other similar override effects, applies only if it's effect is better, recalculates all additive on apply
 
-| Buff Type | Examples | Stacking Rule |
-|-----------|----------|---------------|
-| **Attack Buffs** | Alchemist (Gnomes), Priest auras | Additive from different sources |
-| **Defense Buffs** | Engineer buffs, terrain bonuses | Additive from different sources |
-| **Accuracy Debuffs** | Mummy debuff (-10), Shadow Veil | Additive from different sources |
+
+| Buff Type                | Examples               | Stacking Rule                     | Affects    |
+|--------------------------|------------------------|-----------------------------------|------------|
+| **Base stat additive**   | Initiative buff (+10)  | Additive from different sources   | Base stat  |
+| **Weapon stat additive** | Alchemist buff (*1.75) | Additive from different sources   | Weapon stat|
+| **Base stat override**   | Armour buff (40%).     | Overriding stat, latest dominates | Base stat  |
+| **Weapon stat override** | Fire buff (Source>fire)| Overriding until battle end.      | Weapon stat| 
 
 **Stacking Formula:**
 ```
 ModifiedStat = BaseStat × (1 + Sum of all modifiers)
 
 Example:
-├─ Base Attack: 100
-├─ Alchemist Buff: +20% (from DataAsset A)
-├─ Hero Aura: +15% (from DataAsset B)
-└─ Final Attack: 100 × (1 + 0.20 + 0.15) = 135
+├─ Base damage: 100
+├─ Alchemist Buff: +20% (from Effect A)
+├─ Hero Aura: +15% (from Effect B)
+└─ Final damage: 100 × (1 + 0.20 + 0.15) = 135
 
 NOT: 100 × 1.20 × 1.15 = 138 (multiplicative)
 ```
 
 **Deduplication:**
-- Effects deduplicate per **DataAsset**, not per effect type
-- Multiple "+20% Attack" buffs stack IF from different DataAssets
-- Same DataAsset = only one instance active
+- Effects deduplicate per effect_stack_id getter (can be incremental for infinite stacking)
+
 
 #### **C. Status Conditions**
+- Has complex logic and different trigger conditions
+- Usually own implementation instead of data-driven approach
 
-| Status | Effect | Duration | Interactions |
-|--------|--------|----------|--------------|
-| **Paralysis** | Skip turn | Varies | Prevents Tactical Retreat, blocks flight |
-| **Petrification** | All armor → 30% | Varies | Worse than paralysis (takes damage) |
-| **Seduction** | Remove wards/blocks/defense | 1 turn | Extends other effect durations by 1 turn |
-| **Transformation** | Convert to Imp (weak melee) | 1 turn base | Extended by Seduction, chance to persist |
-| **Stun** | Skip turn (physical source) | 1 turn | From Birdfolk ultimate ability |
+| Status               | Effect                               | Duration | Extras       |
+|----------------------|--------------------------------------|----------|--------------|
+| **Paralysis**        | Skip turn                            | Varies   |              |
+| **Petrification**    | All armor → 30%, skip turn           | Varies   |              |
+| **Seduction**        | Remove wards/blocks/defense          | 1 turn   |              | 
 
-#### **D. Defensive Effects**
-
-| Effect | Mechanic | Duration |
-|--------|----------|----------|
-| **Shadow Veil** | Subtract accuracy after cap (min 10%) | Varies |
-| **Defend Stance** | 50% damage reduction | Until turn start |
-| **Wards** | 100% damage block (one-time) | Until consumed |
-| **Chain Ability Bonuses** | Various (damage, regen, wards) | Next action |
 
 ### **Effect Duration Management**
 
@@ -209,13 +209,12 @@ NOT: 100 × 1.20 × 1.15 = 138 (multiplicative)
 OnTurnStart() Processing:
 ├─ Decrement RemainingTurns for all effects
 ├─ Process DoT damage
-├─ Trigger turn-start effects
+├─ Trigger effects
 └─ Remove effects with RemainingTurns ≤ 0
 
 OnTurnEnd() Processing:
 ├─ Trigger turn-end effects
-├─ Apply new effects from abilities
-└─ No duration decrement
+└─ No duration decrement (for consistency, if effect has duration, better decrement on start)
 ```
 
 ### **Effect Removal (Dispel)**
@@ -223,23 +222,23 @@ OnTurnEnd() Processing:
 **Friendly Dispel** (Common):
 - Priest healing often removes debuffs
 - Self-cleanse abilities (rare)
+- Behavior: removes all non-positive effects by passing through current effects container
 
-**Enemy Dispel** (Rare):
+**Full Dispel** (Rare):
 - High-tier Mage spells
-- Specific counter-abilities
+- Behavior: removes all effects from a unit
 
 ---
 
 ## **5. SPECIAL COMBAT MECHANICS**
+(examples)
 
 ### **A. Life Drain / Vampirism**
 
-| Unit Type | Mechanic | Notes |
-|-----------|----------|-------|
-| **Demon Devourers T1** | Restore fixed HP per attack | Doesn't scale with damage |
-| **Demon Devourers T2+** | Restore 50% of damage dealt | Scales with damage output |
-| **Living on Borrowed Time (T3)** | Can survive at negative HP until next attack | Must heal above 0 or die |
-| **Resistance Assassin Hero** | Sacrifice 10% army HP for +15% damage/unit, heal 10% on kill | Army-wide mechanic |
+| Unit Type                        | Mechanic                                                   | Notes |
+|----------------------------------|------------------------------------------------------------|-------|
+| **Demon Devourers T1**           | On unit attacks: self heal (value)                         |       |
+| **Demon Devourers T2+**          | On unit attacks: self heal (damage dealt)                  |       |
 
 ### **B. Charge Systems**
 
@@ -252,11 +251,11 @@ Engineer Assist: Can reload ally (costs Engineer's turn)
 
 Example Flow:
 Turn 1: Fire (1 charge consumed)
-Turn 2: Reload (charges restored)
-Turn 3: Fire (1 charge consumed)
+Turn 2: Fire (1 charge consumed)
+Turn 3: Reload (charges restored)
 ```
 
-#### **Demonic Charges (Gnomes)**
+#### **Demonic Charges (Dwarves)**
 ```
 Charges: Limited (varies by weapon)
 Reloadable: NO
@@ -265,95 +264,84 @@ Transferable: YES (via Demonomancer)
 Demonomancer Actions:
 ├─ Drain charges from unit
 ├─ Transfer charges to another unit
-└─ Consume charges for spells
+└─ Spells consume charges
 
-When Exhausted: Weapon/abilities unusable
+When Exhausted: dependent abilities unusable
 ```
 
-### **C. Salvo Mechanic (Gnomes)**
+
+### **Repair Mechanic (Dwarves)**
 
 ```
-Trigger: Identical unit attacks
-Effect: All same-type units who haven't acted fire simultaneously
+Healing action, own calculation mechanic (affects also max hp)
 
 Example:
-├─ 3 Musketeers on battlefield (all Initiative 45-55)
-├─ First Musketeer attacks → Triggers salvo
-├─ Other 2 Musketeers fire immediately
-└─ Bypasses initiative spread
-```
-
-### **D. Repair Mechanic (Gnomes)**
-
-```
-Formula: Restore 20% of CURRENT max HP
-Degenerative: Each repair permanently reduces max HP by 20%
-
-Example:
-├─ Mech: 1000 max HP, 300 current HP
-├─ Repair 1: +60 HP (20% of 300), new max = 800 HP
-├─ Repair 2: +72 HP (20% of 360), new max = 640 HP
+├─ Mech: 100 max HP, 30 current HP
+├─ Repair 1: +20 HP (20% of 100), new max = 80 HP
+├─ Repair 2: +16 HP (20% of 80), new max = 64 HP
 └─ Continues degrading with each use
 ```
 
-### **E. Demonic Breakout (Gnomes)**
+### **E. Demonic Breakout (Dwarves)**
 
 ```
-Trigger: Gnome mech destroyed
+Trigger: Mech unit died
 Effect:
-├─ Spawn aggressive demon on mech's position
-├─ Demon attacks all nearby units (friend/foe)
-├─ Priority: Last attacker > random target
-└─ If demon is last survivor → Defeat for Gnomes
+├─ Spawn demon on mech's position (enemy team)
+├─ Demon has "auto-control" effect = actions are done by AI
+├─ Demon has "Third side" effect = changes team when friendly team dies
+└─ If demon is last survivor: draw (lose for both teams)
 ```
 
 ### **F. Tactical Retreat Systems**
 
-#### **Birdfolk Retreat**
+#### **Quemin Retreat**
 ```
-Trigger: Unit would take fatal damage
+Trigger: Unit dies
 Conditions: NOT paralyzed/petrified/grounded
 Effect: Unit flees battlefield instead of dying
-Squad Survival: Requires at least 1 natural flee
+Squad Survival: Requires at least 1 fled unit with hp > 0
+After battle fled units clamp hp to (1..)
 ```
 
-#### **Demon "Dragon's Pride"**
+#### **League "Dragon's Pride"**
 ```
-Trigger: Dragon would die
+Trigger: Unit dies
 Effect:
-├─ Dragon flees battlefield
-├─ Makes final AoE attack on all enemies
-└─ Does NOT apply to Dracoliches
+├─ Unit flees battlefield instead of dying
+├─ Makes final attack before retreat, damaging enemy units
+└─ Requires at leas 1 fled unit with hp > 0 for squad to survive, clamps to 1hp if survives.
 ```
 
-### **G. Chain Ability System (Birdfolk)**
+### **G. Chain Ability System (Quemin)**
 
 ```
-Mechanic: Actions grant bonuses if specific prior action
+Mechanic: Actions grant bonuses if specific prior action (unit subclass stores history)
 Duration: Next action only
 
 Common Chains:
-├─ Defend → Regeneration (20% HP restore)
+├─ Defend → self-heal (20% HP restore)
 ├─ Wait → Bonus damage (+50%)
-├─ Attack → Ward (physical block)
-└─ Defend → Accuracy bonus (+20 initiative)
+├─ Attack → Ward (physical)
+└─ Defend → (Accuracy / initiative buff)
 
-Ultimate Chain Example (T2+ Defenders):
+Ultimate Chain Example:
 Sequence: Defend → Attack → Wait → Attack → Attack → Flight
+Processes on OnUnitAttacks, checks and records sequence history
 Reward: Next attack deals 2× damage + stun
 ```
 
-### **H. Phylactery System (Resistance Liches)**
+### **H. Phylactery System (League Liches)**
 
 ```
 Setup: Lich assigns phylactery to allied unit
 Effects:
-├─ Holder: +% max HP buff
-├─ Lich: Revive on death (50% HP, next turn)
-└─ Destruction: If holder dies, Lich dies permanently
+├─ Holder: +% max HP buff, effect "phylactey holder"
+├─ Lich: on unit died: checks battlefield for unit owning phylactery. If found, instant revive (50% hp)
+└─ Destruction: If holder dies, effect is wasted and lich can be killed
 
 Self-Phylactery:
-├─ Lich gets HP buff + 1 guaranteed revive
+├─ Lich gets HP buff + 1 guaranteed revival
 └─ Second death is permanent
 ```
 
@@ -361,12 +349,11 @@ Self-Phylactery:
 
 ```
 Movement: Instant teleport to any cell (costs turn)
-Special: Can leave battlefield entirely
-Retreat: Instant (don't need to be in back row)
+Special: Can leave battlefield entirely (go to fled container without lose processing of turns)
+Return: can return on any cell from fled container (only action allowed while fled)
 
 Limitation:
-├─ If all units derealized (none on battlefield)
-└─ Battle is LOST for Resistance
+├─ Unit is considered fled while derealized. If no other units alive = battle ends.
 ```
 
 ---
@@ -382,74 +369,27 @@ On Level-Up:
 ├─ Accuracy += 0.01                    // +1% (capped at 1.0)
 └─ Weapon Damage *= 1.1                // +10% damage per weapon
 
-NOT Modified:
-├─ Initiative (remains static)
-├─ Armor percentages (remains static)
-└─ Flat damage reduction (remains static)
 ```
 
 ### **Weapon Scaling**
 
 ```
 Base Weapon Damage: Set by WeaponDataAsset
-Per Level Scaling: +10% damage
+Per Level Scaling: +10% damage from base
 
 Example:
 ├─ Weapon: 50 base damage
 ├─ Unit Level 1: 50 damage
 ├─ Unit Level 2: 55 damage (+10%)
-├─ Unit Level 3: 60.5 damage (+10%)
-└─ Unit Level 5: 73.2 damage (+46.4% total)
 ```
-
-### **Experience & Replacement Mechanics**
-
-#### **Empire Replacement**
-```
-Resurrection (Potions): Full restore
-Replacement Penalty: Lose (10 × UnitLevel)% of experience difference
-Accelerated Training: New unit gains 25% of experience gap per battle
-Stabilization: Priest prevents death → unit survives at 1 HP
-```
-
-#### **Resistance Necromancy**
-```
-Cost: 1 enemy corpse
-Effect: Revive undead unit
-Exclusions: Cannot revive Liches (need phylactery)
-```
-
-#### **Demon Consumption**
-```
-Base Transfer: 75% of accumulated experience
-Same Type/Level: Up to 95% transfer
-Existing Unit Consumes: Down to 40% transfer
-Flexibility: Can redistribute experience across army
-```
-
-#### **Gnome Defense Stance**
-```
-Condition: Unit dies while in Defend stance
-Effect: Survives at 1 HP if battle won
-Exclusion: Does NOT apply to mechs (permanent loss)
-```
-
-#### **Birdfolk Training Bonus**
-```
-Condition: Unit has less experience than army average
-Bonus: +25% of experience gap per battle
-```
-
----
 
 ## **7. CRITICAL INTERACTIONS & EDGE CASES**
 
 ### **All-Consuming Flame + Fire Immunity**
 ```
 Scenario: Demon attacks fire-immune target with ward
-├─ Ward blocks 100% of direct damage
-├─ All-Consuming Flame applies DoT anyway (25% × 2 turns)
-└─ 10% of DoT penetrates fire immunity
+├─ Ward is skipped
+└─ 10% of damage penetrates fire immunity (dealt as life damage)
 ```
 
 ### **Seduction + Transformation Combo**
@@ -488,40 +428,19 @@ Example (minimum):
 ```
 First Fatal Damage:
 ├─ Unit HP: 100 → -50 (survives)
-├─ Status: "Borrowed Time" active
+├─ Status: "Borrowed Time" active, suppressing onDeath trigger
 └─ Can take unlimited additional damage
 
 Next Attack:
 ├─ Must deal damage to heal
-├─ If healed above 0 → Survives
+├─ Check on turn end: if healed above 0 → Survives
 ├─ If still ≤ 0 → Dies instantly
 ```
 
 ### **Repair Degradation Cap**
 ```
 Question: Can mech be repaired to 0 max HP?
-Answer: [NEEDS CLARIFICATION]
-
-Current: 20% reduction per repair
-├─ Repair 1: 100% → 80% max
-├─ Repair 2: 80% → 64% max  
-├─ Repair 3: 64% → 51.2% max
-├─ Repair 4: 51.2% → 40.96% max
-└─ Repair 5: 40.96% → 32.77% max
+Answer: No
 ```
 
 ---
-
-## **DOCUMENTATION STATUS**
-
-### **Completed:**
-- ✅ Damage calculation formula
-- ✅ Defense layer system
-- ✅ Accuracy & hit mechanics
-- ✅ Effect categories & stacking
-- ✅ Special combat mechanics
-- ✅ Level-up scaling
-- ✅ Faction-specific mechanics
-
-
-
