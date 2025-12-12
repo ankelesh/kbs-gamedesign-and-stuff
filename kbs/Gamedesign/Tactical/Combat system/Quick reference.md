@@ -72,8 +72,8 @@ Armor - NO CHANGE
 
 ### **Effect Stacking Rules**
 ```
-SAME DataAsset → Replace/Refresh (no stack)
-DIFFERENT DataAsset → Stack ADDITIVELY
+SAME stacking_id → Replace/Refresh (no stack)
+DIFFERENT → Stack ADDITIVELY
 
 Example:
 Base Attack = 100
@@ -81,40 +81,28 @@ Buff A (+20%) + Buff B (+15%) = 100 × 1.35 = 135
 NOT: 100 × 1.20 × 1.15 = 138 (no multiplication)
 ```
 
-### **Special Case: All-Consuming Flame**
-```
-IF attack blocked by ward:
-  → 0 direct damage
-  → DoT applied anyway (25% × 2 turns)
-  → 10% DoT penetrates fire immunity
-```
-
----
-
-## **CARD 2: FACTION MECHANICS COMPARISON**
-
-| Faction | Primary Mechanic | Replacement System | Unique Features |
-|---------|------------------|-------------------|-----------------|
-| **Gnomes** | Charge Systems | Replace with XP penalty | • Powder weapons (reloadable)<br>• Demonic charges (limited)<br>• Salvo (initiative sync)<br>• Repair (degenerative)<br>• Demon breakout on mech death |
-| **Demons** | Two-Cell Units | Consumption (75% XP transfer) | • All-Consuming Flame<br>• Petrification (30% armor)<br>• Seduction (extends effects)<br>• Transformation to Imp<br>• Heavy flight (limited) |
-| **Empire** | Cavalry Focus | Resurrection/Penalty/Training | • Healing (priests only)<br>• Charge actions (attack while moving)<br>• Auxiliary cavalry swap<br>• Stabilization (save at 1 HP) |
-| **Resistance** | Corpse Manipulation | Necromancy (1 corpse = 1 unit) | • Shadow Veil (accuracy debuff)<br>• Phylactery (lich revival)<br>• Paralysis (skip turn)<br>• Derealization (teleport/vanish)<br>• Health manipulation |
-| **Birdfolk** | Chain Abilities | Tactical Retreat + Training Bonus | • Flight mechanics<br>• Strike on landing (bonus damage)<br>• Chain combos (multi-turn sequences)<br>• Ultimate abilities (6-step unlock)<br>• Effect on takeoff |
-
 ### **Faction Strengths Quick Compare**
 
-| Strength | Best Faction | Second Best |
-|----------|--------------|-------------|
-| **Cavalry** | Empire | Resistance (undead cavalry) |
-| **Two-Cell Units** | Demons | - |
-| **Magic Damage** | Resistance (Death) | Demons (Fire) |
-| **Physical Defense** | Gnomes | Empire |
-| **Magic Defense** | Birdfolk | Gnomes |
-| **Ranged DPS** | Birdfolk | Gnomes (early) |
-| **Melee DPS** | Demons | Birdfolk |
-| **Healing** | Empire (only faction) | - |
-| **Resurrections** | Resistance | Empire (potions only) |
-| **Mobility** | Birdfolk (flight) | Demons (heavy flight) |
+| Strength             | Best Faction | Second Best | Worst     |
+|----------------------|--------------|-------------|-----------|
+| **Cavalry**          | Empire       | League      | Dwarves   |
+| **Two-Cell Units**   | Demons       | Dwarves     | Empire    |
+| **Magic Damage**     | Quemin       | League      | Empire    |
+| **Physical Defense** | Gnomes       | Empire      | Quemin    |
+| **Magic Defense**    | Quemin       | Demons      | League    |
+| **Ranged DPS**       | Quemin       | Dwarves     | Empire    |
+| **Melee DPS**        | Demons       | Empire      | Quemin    |
+| **Healing**          | Empire       | Quemin      | Demons    |
+| **Can afford losses**| League       | Demons      | Dwarves   |
+| **Mobility**         | Quemin       | Demons      | Dwarves   |
+| **Durability**       | Dwarves      | Demons      | Quemin    |
+| **Damage over time** | League       | Demons      | Empire    |   
+| **Crowd control**.   | League       | Demons      | Dwarves.  |
+| **Debuffs**          | Demons       | League      | Empire    |
+| **Burst**            | Dwarves      | Quemin      | League    |
+| **Hybrid weapons**.  | Empire       | Dwarves.    | Demons    |
+| **Buffs**            | Empire.      | Dwarves     | League    |      
+| **Special defences** | League       | Quemin      | Dwarves   |
 
 ---
 

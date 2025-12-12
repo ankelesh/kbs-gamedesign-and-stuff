@@ -191,6 +191,10 @@ NOT: 100 × 1.20 × 1.15 = 138 (multiplicative)
 **Deduplication:**
 - Effects deduplicate per effect_stack_id getter (can be incremental for infinite stacking)
 
+**Positive/negative differentiation**
+- Effects have get_evaluation() which returns overral evaluation of effect
+- Possible states: Positive, Negative, Neutral, Transformation, Stance
+
 
 #### **C. Status Conditions**
 - Has complex logic and different trigger conditions
@@ -218,15 +222,16 @@ OnTurnEnd() Processing:
 ```
 
 ### **Effect Removal (Dispel)**
+- Effect state: dispellable/not dispellable
 
 **Friendly Dispel** (Common):
 - Priest healing often removes debuffs
 - Self-cleanse abilities (rare)
-- Behavior: removes all non-positive effects by passing through current effects container
+- Behavior: removes all non-positive and dispellable effects by passing through current effects container
 
 **Full Dispel** (Rare):
 - High-tier Mage spells
-- Behavior: removes all effects from a unit
+- Behavior: removes all effects from a unit (dispellable)
 
 ---
 

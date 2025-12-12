@@ -1,5 +1,5 @@
 # TACTICAL COMBAT SYSTEM - PHASE 4: UI/UX REQUIREMENTS
-*Project KBS - Professional Game Design Documentation*
+*Project KBS - Game Design Documentation*
 
 ---
 
@@ -9,23 +9,23 @@
 
 ```
 Screen Layout:
-┌─────────────────────────────────────────────────────────────┐
-│ [Turn: N]     [Turn Queue: Portraits Row]      [Team Panel] │
+┌───────────────────────────────────────────────────────────────┐
+│ [Turn: N]     [Turn Queue: Portraits Row]      [Team Panel]   │
 │                                                               │
 │                                                               │
 │                      BATTLEFIELD GRID                         │
 │                     (3D Isometric View)                       │
 │                                                               │
-│ [Current Unit]                            [Hovered Unit]     │
+│ [Current Unit]                            [Hovered Unit]      │
 │    Widget                                     Widget          │
 │                                                               │
-│              [Ability Panel - Grid of Icons]                 │
-└─────────────────────────────────────────────────────────────┘
+│              [Ability Panel - Grid of Icons]                  │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## **2. IMPLEMENTED UI COMPONENTS** (Current Build - 70%)
+## **2. IMPLEMENTED UI COMPONENTS** 
 
 ### **A. Turn Counter** ✅
 **Location:** Top-left corner  
@@ -34,13 +34,12 @@ Screen Layout:
 
 ### **B. Turn Queue Display** ✅
 **Location:** Top center (horizontal row)  
-**Content:** Portrait cards for each unit in initiative order  
+**Content:** Portrait cards for each unit in initiative order, special "current unit" slot for popped unit  
 **Per Card:**
 ```
 ┌──────────────┐
 │  [Portrait]  │
 │  Unit Name   │
-│  HP: XX/XX   │
 │  Ini: XX     │
 └──────────────┘
 ```
@@ -87,7 +86,8 @@ Screen Layout:
 **Behavior:**
 - Switchable between player team / enemy team
 - Quick reference for army status
-- [NEEDS SPEC: Toggle button? Tabs? Hotkey?]
+- Toggle button for switching
+- When player's turn = set to player's team, when enemy turn = set to enemy team, when player deals damage - switch to enemy team for animation duraton
 
 ### **F. Battlefield Visual Indicators** ✅
 
@@ -97,17 +97,17 @@ Screen Layout:
 
 #### **Target Highlighting**
 - **Valid Targets:** Red decal circles
-- **Trigger:** Ability selected + hover over valid target
+- **Trigger:** Ability selected
 - **Coverage:** All units within reach of selected ability
 
-#### **Friendly Position Indicator**
+#### **Position indicator**
 - **Type:** Yellow decal circles
-- **Purpose:** Shows allied unit positions (not targets)
-- **Always visible:** For spatial awareness
+- **Purpose:** Shows non-hostile targeting (empty cell or friendly unit for special abilities)
+- **Coverage:** All units within reach of selected ability
 
 ---
 
-## **3. PLANNED/PARTIAL UI COMPONENTS** (Remaining 30%)
+## **3. PLANNED/PARTIAL UI COMPONENTS** 
 
 ### **A. Ability Panel** ⚙️ *Partially Implemented*
 **Location:** Lower bottom (horizontal grid)  
@@ -122,44 +122,43 @@ Screen Layout:
 ```
 
 **States:**
-| State | Visual | Interaction |
-|-------|--------|-------------|
-| **Available** | Full color | Clickable |
-| **Disabled** | Grayscale | Ignored (no click response) |
-| **Selected** | Border highlight | Shows targeting overlay |
-| **No Charges** | Grayscale + Red "X" | Ignored |
+| State          | Visual                  | Interaction                   |
+|----------------|-------------------------|-------------------------------|
+| **Available**  | Full color              | Clickable                     |
+| **Disabled**   | Grayscale               | Ignored (no click response)   |
+| **Selected**   | Border highlight        | Shows targeting overlay       |
+| **No Charges** | Grayscale + Red "X"     | Ignored                       |
 
 **Hover Behavior:**
 - Shows tooltip with ability details (see Tooltip section)
 
 ### **B. Effect Panel** ⚙️ *System Exists, Display TBD*
 **Location:** 
-- Above portrait in Current Unit Widget
-- Above portrait in Hovered Unit Widget
+- Above or near portrait in Current Unit Widget
+- Above or near portrait in Hovered Unit Widget
 - [NOT on battlefield models - too cluttered]
 
 **Layout:** Horizontal icon row (max 10 effects)
 ```
-┌──┐┌──┐┌──┐┌──┐
-│♠ ││♣ ││♥ ││♦ │ ← Effect Icons
-│2 ││5 ││  ││3 │ ← Duration (bottom-left)
-│×3││  ││  ││  │ ← Stack count (top-right, gray)
-└──┘└──┘└──┘└──┘
+┌─────┐
+│  x3 │ ← Stack count (top-right, gray)
+│     │ 
+│2    │ ← Duration (bottom-left)
+└─────┘
 ```
 
 **Icon Requirements:**
 - Distinct silhouettes (recognizable at small size)
 - Color-coded by effect type:
-  - Red: Debuffs (damage, stat reduction)
-  - Green: Buffs (healing, stat increase)
-  - Blue: Control (paralysis, stun)
-  - Purple: Transformation effects
-  - Yellow: Defensive (wards, shields)
+  - Red: negative
+  - Green: positive
+  - Blue: neutral
+  - Purple: Transformation
+  - Yellow: stance
 
 **Hover Behavior:**
 - Shows tooltip with effect details (see Tooltip section)
 
----
 
 ## **4. DAMAGE PREVIEW SYSTEM** ✅
 
@@ -182,7 +181,6 @@ IF ability selected AND hovering over valid target:
 **NOT Included:**
 - Damage breakdown (pre-armor, armor reduction, etc.)
 - Effect application chance
-- Min/max damage range
 - Crit chance (doesn't exist)
 
 ### **Multi-Target Preview**
@@ -239,24 +237,7 @@ Player selects Fireball (AoE 5 targets)
 
 ### **ClosestEnemies Highlighting**
 **Behavior:** Highlights ALL adjacent enemies (not just one)  
-**Note:** Contradicts Phase 3 spec (needs clarification)
-```
-Clarification Needed:
-├─ Phase 3 Doc: "ClosestEnemies = always one"
-└─ UI Spec: "highlights all valid targets"
 
-Possible Resolution:
-├─ Highlights all adjacent
-├─ Implementation picks ONE (array order)
-└─ Player doesn't control which is chosen
-```
-
-### **Salvo Visual Feedback**
-**No Extra Display:** Uses default widgets  
-**Rationale:** Salvo is queue manipulation, not simultaneous fire  
-**Player learns through:** Units firing in rapid sequence
-
----
 
 ## **6. POST-ACTION VISUAL FEEDBACK**
 
@@ -285,21 +266,16 @@ Possible Resolution:
 ### **Widget Updates** ✅
 **Health Changes:**
 - HP numbers update immediately in all relevant widgets
-- HP bars update (smooth animation vs instant?)
-- [NEEDS SPEC: Animation duration? Instant snap?]
+- HP bars update (instant)
 
 **Unit Removal:**
 - Dead unit removed from battlefield
 - Dead unit removed from queue
-- Dead unit grayed out in team container (or removed?)
+- Dead unit grayed out in team container
 - Corpse spawns after death animation
 
 **Queue Rearrangement:**
 - Turn queue updates when units wait/summon/die
-- Smooth slide animation as portraits shift?
-- [NEEDS SPEC: Animation or instant update?]
-
----
 
 ## **7. DETAILED INSPECTION SYSTEM**
 
@@ -320,8 +296,8 @@ Possible Resolution:
 │ ├─ Fire Armor: XX%                     │
 │ ├─ [Other armors...]                   │
 │ ├─ Flat Reduction: XX                  │
-│ ├─ Immunities: [Icons]                 │
-│ └─ Wards: [Icons]                      │
+│ ├─ Immunities: [text]                 │
+│ └─ Wards: [text]                      │
 │                                        │
 │ Active Effects:                        │
 │ └─ [Effect Icons with hover tooltips]  │
@@ -344,11 +320,9 @@ Possible Resolution:
 - **Enemy Units:** Full information (no hidden stats)
 - **Rationale:** Tactical decision-making requires complete info
 
----
-
 ## **8. TOOLTIP SYSTEM**
 
-### **Ability Tooltips** ⚙️ *System Needed*
+### **Ability Tooltips** ⚙️ 
 
 **Trigger:** Hover over ability icon (in ability panel OR popup)  
 **Content:**
@@ -359,13 +333,6 @@ Possible Resolution:
 │ [Ability Description]                │
 │ Describes what ability does in       │
 │ natural language.                    │
-│                                      │
-│ Damage: [Formula/Range]              │
-│ Targets: [Reach Type]                │
-│ Charges: [Current/Max or Unlimited]  │
-│ Cost: [Turn-ending? Locking?]        │
-│                                      │
-│ Special: [Unique mechanics]          │
 └──────────────────────────────────────┘
 ```
 
@@ -380,7 +347,6 @@ Possible Resolution:
 │                                      │
 │ Damage: Weapon-dependent             │
 │ Targets: Any Enemy (weapon reach)    │
-│ Charges: Unlimited                   │
 │ Ends Turn: Yes                       │
 └──────────────────────────────────────┘
 ```
@@ -393,9 +359,8 @@ Possible Resolution:
 │ Hurl a ball of flame at target and   │
 │ surrounding enemies.                 │
 │                                      │
-│ Damage: 80 Fire (to all targets)    │
+│ Damage: 80 Fire (to all targets)     │
 │ Targets: Target + Area (cross)       │
-│ Charges: 3/5                         │
 │ Ends Turn: Yes                       │
 │                                      │
 │ Special: Applies All-Consuming       │
@@ -407,6 +372,7 @@ Possible Resolution:
 - Show ACTUAL damage (unit's stats applied)
 - Not generic formula - player sees real numbers
 - Example: "Damage: 80" not "Damage: Base × 1.5"
+- Actual layout depends of action itself (return formatted text)
 
 ### **Effect Tooltips** ⚙️ *System Needed*
 
@@ -417,12 +383,6 @@ Possible Resolution:
 │ [Effect Name]                        │
 │                                      │
 │ [Effect Description]                 │
-│                                      │
-│ Duration: [X turns remaining]        │
-│ Magnitude: [Numerical value]         │
-│ Source: [Unit/Ability that applied]  │
-│                                      │
-│ [Type-specific stats]                │
 └──────────────────────────────────────┘
 ```
 
@@ -437,7 +397,6 @@ Possible Resolution:
 │                                      │
 │ Duration: 3 turns                    │
 │ Damage/Turn: 15                      │
-│ Source: Skeleton Archer              │
 └──────────────────────────────────────┘
 ```
 
@@ -450,7 +409,6 @@ Possible Resolution:
 │                                      │
 │ Duration: 5 turns                    │
 │ Bonus: +20% Attack                   │
-│ Source: Gnome Alchemist              │
 └──────────────────────────────────────┘
 ```
 
@@ -462,7 +420,6 @@ Possible Resolution:
 │ Unit cannot act.                     │
 │                                      │
 │ Duration: 2 turns                    │
-│ Source: Ghost Touch                  │
 │                                      │
 │ Effect: Turn is skipped entirely.    │
 └──────────────────────────────────────┘
@@ -481,32 +438,11 @@ Possible Resolution:
 - Active effect count (icon quantity)
 
 **On Hover (Widget):**
+- Any unit
 - Current HP / Max HP
 - Initiative value
 - Unit name
 - Effect icons (hoverable)
-
-**On Right-Click (Popup):**
-- All core stats
-- All defense stats
-- All active effects (with details)
-- All abilities (with tooltips)
-- Weapon information
-- Progression data (level, experience)
-
-### **Visibility Rules**
-
-| Information | Player Units | Enemy Units |
-|-------------|--------------|-------------|
-| HP (current/max) | ✅ Full | ✅ Full |
-| Initiative | ✅ Full | ✅ Full |
-| Accuracy | ✅ Full | ✅ Full |
-| Armor Values | ✅ Full | ✅ Full |
-| Immunities | ✅ Full | ✅ Full |
-| Wards | ✅ Full | ✅ Full |
-| Active Effects | ✅ Full | ✅ Full |
-| Abilities | ✅ Full | ✅ Full |
-| Weapon Damage | ✅ Full | ✅ Full |
 
 **Design Philosophy:** Complete information transparency  
 **Rationale:** Tactical game requires informed decisions
@@ -525,8 +461,6 @@ Possible Resolution:
 - Simple text feed (last 5 actions)
 - "Unit X attacked Unit Y for Z damage"
 - Scrollable history panel (toggle on/off)
-
----
 
 ## **11. SETTINGS & ACCESSIBILITY** ⚙️ *Not Planned for Dev Phase*
 
@@ -561,14 +495,17 @@ Possible Resolution:
 │                     TURN START                              │
 │  - Current Unit Widget updates                              │
 │  - Ability Panel populates                                  │
+│  - Queue shifts                                             │
+│  - Team selected unit frame update                          │
+│  - Targeting for default ability setted up                  │
 │  - UI unlocked for player input                             │
 └─────────────────────────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                  ABILITY SELECTION                          │
-│  - Player clicks ability icon                               │
-│  - Targeting overlay activates                              │
+│  - Player clicks ability icon, it is framed, previous not   │
+│  - Targeting overlay refreshes                              │
 │  - Valid targets highlighted                                │
 └─────────────────────────────────────────────────────────────┘
                           │
@@ -577,7 +514,7 @@ Possible Resolution:
 │                  TARGET SELECTION                           │
 │  - Hover shows damage preview                               │
 │  - Click confirms target                                    │
-│  - OR Right-click to cancel                                 │
+│  - Ability can be changed again                             │
 └─────────────────────────────────────────────────────────────┘
                           │
                           ▼
@@ -600,46 +537,26 @@ Possible Resolution:
 
 ### **UI Lock States**
 
-| State | Input Allowed | Purpose |
-|-------|---------------|---------|
-| **Unlocked** | Full player control | Ability selection, targeting |
-| **Locked (Animation)** | No input | Prevents double-actions during animation |
-| **Locked (Enemy Turn)** | Hover only | Player can inspect but not act |
-| **Locked (Game Over)** | No input | Battle resolved |
+| State                  | Input Allowed            | Purpose                                   |
+|------------------------|--------------------------|-------------------------------------------|
+| **Unlocked**           | Full player control      | Ability selection, targeting              |
+| **Locked (Animation)** | No input                 | Prevents double-actions during animation  | 
+| **Locked (Game Over)** | No input                 | Battle resolved                           |  
 
----
 
 ## **13. POLISH & JUICE RECOMMENDATIONS**
-
-### **Screen Shake**
-- Light shake on attack impact
-- Heavy shake on death/explosion
-- Configurable intensity (or disable)
-
-### **Slow Motion**
-- Brief slow-mo on critical moments:
-  - Killing blow
-  - Last unit standing
-  - Ultimate ability activation
-
-### **Camera Focus**
-- Auto-pan to acting unit when their turn starts
-- Smooth camera transition (not instant snap)
-- Option to disable auto-pan
 
 ### **Sound Design**
 - Distinct UI sounds:
   - Click: Different sounds for valid/invalid actions
   - Hover: Subtle highlight sound
   - Turn start: Notification sound
-  - Low HP: Warning sound when unit below 25% HP
+  - Low HP: Warning sound when own unit below 25% HP
 
 ### **Unit Selection Feedback**
 - Clicked ability icon bounces slightly
 - Selected unit pulses (in addition to decal)
 - Hover over unit scales model up 105%
-
----
 
 ## **14. IMPLEMENTATION PRIORITY**
 
@@ -671,101 +588,6 @@ Possible Resolution:
 19. ❌ Advanced camera focus
 20. ❌ Accessibility features
 
----
-
-## **15. OPEN QUESTIONS & CLARIFICATIONS NEEDED**
-
-### **A. Team Container Toggle**
-- **Question:** How does player switch between teams?
-- **Options:**
-  - Tab key toggle?
-  - Click on "Team" label?
-  - Separate buttons for Player/Enemy?
-  - Always show both (split panel)?
-
-### **B. HP Bar Animation**
-- **Question:** Should HP changes animate smoothly or snap instantly?
-- **Recommendation:** Smooth animation (0.3 seconds) for clarity
-- **Alternative:** Instant for fast-paced feel
-
-### **C. Queue Update Animation**
-- **Question:** When queue reorders, do portraits slide or snap?
-- **Recommendation:** Smooth slide (0.2 seconds) for clarity
-- **Alternative:** Instant for performance
-
-### **D. ClosestEnemies Behavior**
-- **Conflict:** Phase 3 says "always one", UI spec says "highlights all"
-- **Question:** Does ability hit one OR multiple adjacent enemies?
-- **Needs Resolution:** Clarify in Phase 3 doc
-
-### **E. Dead Unit Display**
-- **Question:** In team container, are dead units:
-  - Removed entirely?
-  - Grayed out (but visible)?
-  - Red "X" overlay?
-- **Recommendation:** Grayed out (preserves army composition view)
-
-### **F. Effect Panel Overflow**
-- **Question:** If unit has >10 effects, how to display?
-- **Options:**
-  - Scrollable panel?
-  - Show first 10, hide rest?
-  - Compress icons (smaller size)?
-- **Recommendation:** Compress to smaller icons + tooltip for full list
-
----
-
-## **16. REFERENCE IMPLEMENTATION GUIDE**
-
-### **Widget Hierarchy (UMG)**
-
-```
-BattleHUD (Canvas Panel)
-├─ TurnCounter (Text Block)
-├─ TurnQueuePanel (Horizontal Box)
-│  └─ UnitQueueCard (Widget) × N
-│     ├─ Portrait (Image)
-│     ├─ NameText (Text Block)
-│     ├─ HPText (Text Block)
-│     └─ InitiativeText (Text Block)
-├─ CurrentUnitWidget (Border)
-│  ├─ PortraitImage (Image)
-│  ├─ NameText (Text Block)
-│  ├─ StatsText (Text Block)
-│  └─ EffectPanel (Horizontal Box)
-│     └─ EffectIcon (Image) × N
-├─ HoveredUnitWidget (Border)
-│  └─ [Same structure as CurrentUnitWidget]
-├─ TeamContainerPanel (Vertical Box)
-│  ├─ TeamLabel (Text Block)
-│  └─ SimplifiedUnitCard (Widget) × N
-│     ├─ Portrait (Image)
-│     └─ HPBar (Progress Bar)
-├─ AbilityPanel (Grid Panel)
-│  └─ AbilityIcon (Button) × N
-│     ├─ IconImage (Image)
-│     └─ ChargeText (Text Block)
-└─ InspectionPopup (Border) [Visibility: Hidden by default]
-   └─ [Detailed stat layout]
-```
-
-### **Decal System (Actors)**
-
-```
-TargetDecalActor (Blueprint)
-├─ DecalComponent
-│  ├─ Material: M_Decal_Targeting
-│  └─ Size: Matches grid cell
-└─ Visibility Logic:
-   ├─ Spawn on ability selection
-   ├─ Update on mouse move
-   └─ Destroy on action execution
-
-Decal Types:
-├─ Blue (Current Unit): Persistent, follows unit
-├─ Red (Valid Target): Temporary, ability-dependent
-└─ Yellow (Friendly Position): Always visible
-```
 
 ### **Tooltip System (UMG)**
 
@@ -782,56 +604,3 @@ Tooltip Manager (C++ Subsystem)
 ├─ HideTooltip()
 └─ UpdatePosition(MouseLocation)
 ```
-
----
-
-## **DOCUMENTATION STATUS**
-
-### **Completed:**
-- ✅ Core HUD layout specification
-- ✅ Implemented component documentation
-- ✅ Planned component specifications
-- ✅ Damage preview system
-- ✅ Targeting feedback system
-- ✅ Visual feedback requirements
-- ✅ Inspection system design
-- ✅ Tooltip system specifications
-- ✅ Information architecture
-- ✅ UI state machine
-- ✅ Implementation priority guide
-- ✅ Reference implementation structure
-
-### **System Documentation Complete:**
-- ✅ **Phase 1:** Battle Structure & Flow
-- ✅ **Phase 2:** Combat Calculations
-- ✅ **Phase 3:** Advanced Mechanics
-- ✅ **Phase 4:** UI/UX Requirements
-
----
-
-## **FINAL RECOMMENDATIONS**
-
-### **For Programmers:**
-1. Implement ability tooltips BEFORE beta (critical for usability)
-2. Effect panel display is high priority (players need effect visibility)
-3. Smooth HP bar animations significantly improve feel
-4. Widget update batching prevents performance issues
-
-### **For Artists:**
-5. Effect icons must be distinct at 32×32 pixel size
-6. Decal materials need clear team distinction (red/blue)
-7. UI background should not compete with battlefield visibility
-8. Status effect VFX should be brief and impactful (not persistent)
-
-### **For Designers:**
-9. Test tooltip verbosity (too much text = ignored)
-10. Damage preview accuracy critical for player trust
-11. Right-click popup must load instantly (<100ms)
-12. Consider colorblind accessibility from start (cheaper than retrofit)
-
----
-
-*Generated via structured interview + screenshot analysis*  
-*Date: 2024*  
-*Format: Professional Game Design Documentation*
-*Current Implementation: 70% Complete*

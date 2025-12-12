@@ -72,7 +72,7 @@ No Value Reroll:
 #### **Mid-Turn Modifications**
 ```
 Quemin Chain Example: Defend grants +20 Initiative
-├─ Effect applies AFTER Defend action resolves
+├─ Effect applies AFTER Defend action resolves (turn ended)
 ├─ Does NOT reshuffle current turn queue
 └─ Takes effect on NEXT turn's queue generation
 
@@ -106,7 +106,7 @@ Behavior:
 | **Area**                 | Shape                 | Manual (anchor point) | DataAsset defines shape                      |
 | **AnyFriendly**          | 1                     | Manual                | Support abilities                            |
 | **AllFriendlies**        | All living allies     | Automatic             | Buff/heal abilities                          |
-| **EmptyCell**            | 0 (position)          | Manual                |  Summon/movement abilities                   |
+| **EmptyCell**            | 0 (position)          | Manual                | Summon/movement abilities                   |
 | **EmptyCellOrFriendly**  | 0 or 1                | Manual                | Swap/teleport abilities                      |
 
 ### **Area Shape System**
@@ -153,7 +153,7 @@ Important: Corpses spawn AFTER all damage is resolved
 
 #### **Effect Application**
 ```
-Timing: All effects applied simultaneously (same frame)
+Timing: All effects applied simultaneously
 Order: Implementation-dependent (array iteration order)
 Deduplication: Standard effect stacking rules apply
 
@@ -163,28 +163,6 @@ Example - AoE Poison:
 ├─ If target already has poison from THIS DataAsset → refresh/replace
 └─ If target has poison from DIFFERENT DataAsset → both stack
 ```
-
-### **ClosestEnemies - Specific Behavior**
-
-```
-Definition: ONE adjacent enemy unit
-
-Selection Priority (if multiple adjacent):
-1. Implementation-dependent (team container order)
-
-Failure Case:
-├─ No adjacent enemies → Ability fails
-└─ Wasted turn? [NEEDS CLARIFICATION]
-
-Grid Layout Example:
-    [ ][ ][ ]
-    [ ][X][E1]  ← E1 adjacent
-    [ ][E2][ ]  ← E2 adjacent
-    
-Result: Hits E1 OR E2 (implementation order)
-```
-
----
 
 ## **3. ANIMATION & TIMING SYSTEM**
 
@@ -205,30 +183,27 @@ Death Animations:
 ├─ Corpse spawn
 └─ Provides dramatic weight + clarity
 
-Major Abilities:
-├─ Salvo sequences
-├─ Chain ability ultimates
-└─ Transformation effects
+
+Movement Animations:
+├─ Unit(s) move simultaneously in target cells
 ```
 
 **NON-BLOCKING Animations** (overlap/parallel):
 ```
 Hit Reactions:
 ├─ Quick flinch/stagger
-├─ Damage number popups
+├─ Damage number popups (if implemented)
 └─ Maintains combat pace
 
 Passive Visuals:
-├─ Buff/debuff auras
 ├─ Status effect particles
-└─ Environmental effects
 ```
 
 ### **Turn Execution Timeline**
 
 ```
 PLAYER PHASE:
-├─ Player selects unit (UI active)
+├─ Player gets control over unit (UI and highlighting activates)
 ├─ Player selects action (UI active)
 ├─ Player selects target (UI active)
 └─ Confirms selection
@@ -257,66 +232,13 @@ QUEUE ADVANCE:
 ```
 Base Speed: 1.0x (cinematic, default)
 Optional Speeds: 1.5x, 2x, 3x
-Skip Control: Hotkey to skip current animation
-
-Recommended Implementation:
-├─ Global speed multiplier on AnimInstance
-├─ Per-animation override option (ultimates always 1x)
-└─ Skip key completes animation instantly (jump to end frame)
+Implemented later
 ```
 
-### **Salvo Animation Mechanics**
-
-```
-MISCONCEPTION: Salvo does NOT fire units simultaneously
-
-ACTUAL BEHAVIOR:
-├─ All similar units assigned SAME initiative value
-├─ Initiative = BEST roll among all similar units
-├─ Units fire sequentially in queue order
-└─ Appears as "burst" due to tight initiative clustering
-
-Example:
-├─ 3 Musketeers with Initiative 45, 50, 47
-├─ Musketeer(50) attacks → Triggers Salvo
-├─ All 3 Musketeers set to Initiative 50
-├─ Queue processes: Musketeer(50) → Musketeer(50) → Musketeer(50)
-└─ Animations play one after another (not parallel)
-
-Visual Effect:
-├─ Camera can rapid-cut between units
-├─ Sound effects overlap slightly
-└─ Creates "volley" impression without true simultaneity
-```
-
----
 
 ## **4. COMPLEX INTERACTION SCENARIOS**
 
-### **Scenario A: Demon Breakout Chain Reaction**
-
-```
-Setup: Multiple Gnome mechs clustered together
-
-Flow:
-1. Player attacks Mech A → Kills it
-2. Demon spawns on Mech A's position
-3. Demon initiative rolled → Inserted in queue
-4. Current turn continues until Demon's turn
-5. Demon turn: Attacks random target (or last attacker if traceable)
-6. If Demon kills Mech B → Another Demon spawns
-7. New Demon initiative rolled → Inserted in queue
-8. Process repeats indefinitely
-
-Chain Limit: NONE (mechanical)
-├─ Can theoretically chain infinitely
-├─ Practically limited by # of mechs on field
-└─ Last surviving demon → Gnome defeat
-
-Design Note: Clustering mechs = high risk
-```
-
-### **Scenario B: Phylactery Management**
+### **Scenario A: Phylactery Management**
 
 ```
 Phylactery Assignment:
@@ -330,25 +252,24 @@ Case 1: Phylactery Holder Dies
 ├─ Lich's "Revival" passive ability locks
 └─ If Lich dies → Permanent death (no revive)
 
-Case 2: Self-Phylactery
-├─ Lich assigns phylactery to self
+Case 2: Lich not using assignment
 ├─ Gains HP buff
-├─ Gains ONE guaranteed revival
+├─ Gains ONE guaranteed revival (other effect)
 ├─ Second death → Permanent death
 
-Case 3: Mid-Battle Reassignment
+Case 3: Second Reassignment
 ├─ NOT POSSIBLE
 ├─ Once assigned, phylactery cannot be moved
 └─ Lasts entire battle
 
 Revival Mechanics:
 ├─ Trigger: Lich HP reaches 0 with valid phylactery
-├─ Effect: Revive at 50% HP on next turn
-├─ Position: Random free cell on battlefield
+├─ Effect: Revive at 50% HP immidiately
+├─ Position: Same cell
 └─ Phylactery consumed after revival
 ```
 
-### **Scenario C: Ghost Derealization Timing**
+### **Scenario B: Ghost Derealization Timing**
 
 ```
 Key Constraint: Ghost can ONLY derealize on own turn
@@ -372,7 +293,7 @@ Turn 2: Enemy casts AoE → Ghost not valid target
 Turn 3: Ghost can reappear on own turn
 ```
 
-### **Scenario D: Borrowed Time + Multi-Hit**
+### **Scenario C: Borrowed Time + Multi-Hit**
 
 ```
 "Living on Borrowed Time" Mechanic:
@@ -394,7 +315,7 @@ Devourer's Next Attack (before turn ends):
 ├─ HP: -50 + 30 = -20 HP
 └─ Still alive (turn hasn't ended)
 
-Attack 2 (same turn):
+Counterattack (same turn):
 ├─ Devourer at -20 HP
 ├─ Takes 40 damage → Now -60 HP
 └─ Still survives (turn hasn't ended)
@@ -409,8 +330,6 @@ Survival Condition:
 ├─ Must heal above 0 HP before turn ends
 └─ Multiple attacks CAN be survived if healing between
 ```
-
----
 
 ## **5. ABILITY CHARGE SYSTEMS - ADVANCED**
 
@@ -429,9 +348,8 @@ Initial State:
 Trigger: Musketeer B acts (Initiative 50)
 Process:
 1. Identify all identical units who haven't acted
-2. Find best initiative among them (50)
-3. Set ALL their initiatives to 50
-4. Queue processes remaining units
+2. Set ALL their initiatives to own
+3. Queue processes remaining units
 
 Result Queue:
 ├─ [50, 50, 50] → All Musketeers fire in sequence
@@ -449,7 +367,7 @@ Important: Not true simultaneity
 Standard Reload:
 ├─ Costs: Full turn (ends turn immediately)
 ├─ Effect: Restores charges to max
-└─ Vulnerable: Unit cannot defend while reloading
+└─ Vulnerable: Unit cannot defend while reloading, effectively skipping turn
 
 Engineer-Assisted Reload:
 ├─ Engineer's Action: Target ally unit
@@ -460,8 +378,6 @@ Engineer-Assisted Reload:
 
 Restriction:
 ├─ Cannot reload self + attack same turn
-├─ Cannot reload while in Defend stance
-└─ Reload locks all other abilities that turn
 ```
 
 ### **Demonic Charge Transfer**
@@ -471,13 +387,13 @@ Demonomancer Actions:
 1. Drain Charges
    ├─ Target: Allied unit with demonic charges
    ├─ Effect: Removes X charges, stores in Demonomancer
-   └─ Cost: Does NOT end turn (stackable)
+   └─ Cost: Does NOT end turn (stackable). Locks itself (1 charge per turn)
 
 2. Transfer Charges
    ├─ Source: Demonomancer's stored charges
    ├─ Target: Allied unit with demonic weapon
-   ├─ Effect: Adds X charges to target
-   └─ Cost: Does NOT end turn (stackable)
+   ├─ Effect: Adds X charges to target from Demonomancer supply
+   └─ Cost: Does NOT end turn (stackable). Locks itself (1 charge per turn)
 
 3. Consume for Spell
    ├─ Source: Demonomancer's stored charges
@@ -487,12 +403,9 @@ Demonomancer Actions:
 Example Flow:
 Turn N:
 ├─ Drain 2 charges from Sniper A
-├─ Drain 3 charges from Sniper B
-├─ Transfer 4 charges to Flamethrower
+├─ Transfer 2 charges to Flamethrower
 └─ Cast spell using 1 remaining charge (ends turn)
 ```
-
----
 
 ## **6. DEATH & REPLACEMENT MECHANICS**
 
@@ -510,7 +423,7 @@ Process:
 Multi-Death Scenario:
 ├─ AoE kills 3 units simultaneously
 ├─ All 3 emit UnitDied signals
-├─ All 3 death animations play (parallel or sequential)
+├─ All 3 death animations play (parallel)
 └─ All 3 corpses spawn after animations complete
 
 Corpse Properties:
@@ -522,7 +435,7 @@ Corpse Properties:
 
 ### **Tactical Retreat - Detailed Rules**
 
-#### **Birdfolk Retreat**
+#### **Quemin Retreat**
 ```
 Trigger: Unit would take fatal damage (HP → 0)
 
@@ -533,9 +446,9 @@ Conditions Check:
 └─ All conditions must pass
 
 Effect:
-├─ Unit removed from battlefield (not corpse)
-├─ Counts as "fled" for victory conditions
-└─ Returns after battle (if squad survives)
+├─ Unit removed from battlefield (not corpse) to "fled" container
+├─ Hp not restored
+└─ Returns after battle (if squad survives), i.e. restores hp to alive state
 
 Squad Survival Requirement:
 ├─ At least ONE unit must flee naturally (not die)
@@ -547,7 +460,7 @@ Failed Retreat:
 └─ Corpse spawns instead of flee
 ```
 
-#### **Demon Dragon's Pride**
+#### **League Dragon's Pride**
 ```
 Trigger: Dragon unit takes fatal damage
 
@@ -570,69 +483,40 @@ Normal Case: Mech destroyed
 └─ Must replace via hiring
 
 Special Case: Max-level Engineer
-├─ Can restore destroyed mech
-├─ Timing: Post-battle only
-├─ Cost: [NEEDS CLARIFICATION - gold? resources?]
-├─ Result: Mech restored at 1 HP
-└─ Max HP degradation applies? [NEEDS CLARIFICATION]
+├─ Can controllably destroy mech
+├─ Timing: Any engineer turn
+├─ Result: Mech restored at 1 HP after battle, but destroyed immidiately
 ```
 
----
 
 ## **7. EDGE CASE RESOLUTION MATRIX**
 
 ### **Effect + Status Condition Interactions**
 
-| Condition | Can Move? | Can Attack? | Can Use Abilities? | Takes DoT? | Notes |
-|-----------|-----------|-------------|-------------------|------------|-------|
-| **Paralysis** | ✗ | ✗ | ✗ | ✓ | Turn completely skipped |
-| **Petrification** | ✗ | ✗ | ✗ | ✓ | All armor → 30%, vulnerable |
-| **Seduction** | ✓ | ✓ | ✓ | ✓ | Removes wards/blocks, extends effects |
-| **Transformation** | ✓ | ✓ (weak) | ✗ | ✓ | Only basic melee attack |
-| **Defend Stance** | ✗ | ✗ | ✗ | ✓ | Voluntary, 50% damage reduction |
-| **Borrowed Time** | ✓ | ✓ | ✓ | ✓ | Can survive at negative HP |
-| **Shadow Veil** | ✓ | ✓ | ✓ | ✓ | Enemy accuracy penalty |
+| Condition         | Can Move? | Can Attack? | Takes DoT? | Notes                                 |
+|-------------------|-----------|-------------|------------|---------------------------------------|
+| **Paralysis**     | ✗         | ✗           | ✓          | Turn completely skipped               |
+| **Petrification** | ✗         | ✗           | ✓          | All armor → 30%, vulnerable           |
+| **Seduction**     | ✓         | ✓           | ✓          | Removes wards/blocks, extends effects |
+| **Transformation**| ✓         | ✓           | ✓          | Only basic melee attack               |
+| **Borrowed Time** | ✓         | ✓           | ✓          | Can survive at negative HP            |
+
 
 ### **Simultaneous Effect Resolution**
 
 **Case: Seduction + Poison + Paralysis**
 ```
 Application Order (same frame):
-1. Paralysis applied → Unit's next turn skipped
+1. Paralysis applied → Unit's next turn skipped (triggers still processed)
 2. Seduction applied → Extends Paralysis by 1 turn
 3. Poison applied → Will proc on unit's (skipped) turn
 
 Result:
-├─ Turn 1: Unit paralyzed (skips turn)
-├─ Turn 2: Still paralyzed (Seduction extended)
+├─ Turn 1: Unit paralyzed (skips turn) and poisoned
+├─ Turn 2: Still paralyzed (Seduction extended). Poison procs
 ├─ Turn 3: Paralysis expires, Poison procs
 └─ Seduction extends ALL effects, not just itself
 ```
-
-### **Priority Conflicts**
-
-**Case: Defend Stance + Forced Movement**
-```
-Unit in Defend stance (50% damage reduction, can't move)
-Enemy uses "Push" ability (forced movement)
-
-Resolution: [NEEDS CLARIFICATION]
-Option A: Push breaks Defend stance
-Option B: Defend prevents forced movement
-Option C: Unit moves but retains Defend buff
-```
-
-**Case: Derealized Ghost + Necromancy**
-```
-Ghost derealizes (leaves battlefield)
-Enemy attempts to raise ghost's corpse
-
-Resolution:
-├─ Ghost has no corpse (derealized, not dead)
-└─ Necromancy fails (no valid target)
-```
-
----
 
 ## **8. IMPLEMENTATION NOTES**
 
@@ -647,8 +531,8 @@ Turn Queue Structure:
 │  └─ New unit spawns (demon breakout, summon)
 └─ Already-acted flags persist through resorts
 
-Optimization:
-├─ Mark units as "acted" rather than removing from queue
+Implementation:
+├─ Mark units as "acted" to make rebuilds
 ├─ Clear "acted" flags when all units have acted
 └─ Rebuild queue for new turn cycle
 ```
@@ -658,62 +542,16 @@ Optimization:
 ```
 Per-Unit Effect Array:
 ├─ Store effects in ActiveEffects TArray
-├─ Deduplicate by DataAsset reference
-├─ Process on turn start (OnTurnStart hook)
-└─ Remove expired effects after processing
+├─ Deduplicate by effect_stack_id getter
+├─ Process on turn start (OnTurnStart hook), turn end (OnTurnEnd) and any other triggers
+└─ Remove expired effects after processing (effect returns expiration state on trigger)
 
 Effect Stacking Logic:
 IF new effect added:
     FOR EACH existing effect:
-        IF effect.DataAsset == newEffect.DataAsset:
+        IF effect.get_stack_id() == new_effect.get_stack_id():
             Replace existing effect
             EXIT
     ELSE:
         Add new effect to array
 ```
-
-### **Animation State Machine**
-
-```
-States:
-├─ IDLE: Awaiting player input
-├─ EXECUTING: Animation playing, UI locked
-├─ TRANSITIONING: Between actions, hit reactions
-└─ DEAD: Death animation playing
-
-Transitions:
-IDLE → EXECUTING: Player confirms action
-EXECUTING → TRANSITIONING: Attack animation completes
-TRANSITIONING → EXECUTING: Next action in sequence
-EXECUTING → DEAD: Unit killed
-DEAD → IDLE: Death animation completes, corpse spawned
-```
-
----
-
-## **DOCUMENTATION STATUS**
-
-### **Completed:**
-- ✅ Initiative system (complete with edge cases)
-- ✅ Multi-target mechanics
-- ✅ Animation timing architecture
-- ✅ Complex scenario resolution
-- ✅ Charge system interactions
-- ✅ Death & corpse mechanics
-- ✅ Effect interaction matrix
-
-### **Needs Clarification:**
-- ❓ ClosestEnemies ability failure behavior (wasted turn?)
-- ❓ Defend Stance + Forced Movement priority
-- ❓ Engineer mech restoration cost/mechanics
-- ❓ Repair degradation floor (can max HP → 0?)
-- ❓ Effect dispel priority order
-
-### **Next Phase:**
-- ⏳ **Phase 4:** UI/UX Requirements (tooltips, feedback, preview systems)
-
----
-
-*Generated via structured interview process*  
-*Date: 2024*  
-*Format: Professional Game Design Documentation*
